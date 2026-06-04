@@ -491,7 +491,7 @@
             .sidebar {
                 top: auto; right: 12px; bottom: 12px; left: 12px;
                 width: calc(100% - 24px);
-                height: 45vh;
+                height: 55vh;
                 border-radius: 24px;
                 box-shadow: 0 16px 40px rgba(0,0,0,0.15);
                 transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease, background 0.4s ease;
@@ -531,8 +531,9 @@
             .search-input { height: 38px; font-size: 13px; }
             .search-wrapper > svg { left: 30px; }
 
-            .filter-section { padding: 0 16px 8px; gap: 5px; }
-            .filter-chip { height: 28px; padding: 0 10px; font-size: 11px; }
+            .filter-section { padding: 0 16px 8px; gap: 5px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .filter-section::-webkit-scrollbar { display: none; }
+            .filter-chip { height: 28px; padding: 0 10px; font-size: 11px; flex-shrink: 0; }
 
             .sort-bar { padding: 0 16px 8px; }
             .property-list { padding: 0 8px 16px; }
@@ -541,7 +542,7 @@
             .card-name { font-size: 12.5px; }
             .card-km { font-size: 15px; }
 
-            .sidebar-toggle { display: flex !important; top: auto; bottom: 16px; right: 12px; z-index: 1002; }
+            .sidebar-toggle { top: auto; bottom: 16px; right: 12px; z-index: 1002; }
             .mobile-fab-group { display: flex; }
 
             .legend-panel { display: none; }
@@ -574,7 +575,7 @@
         }
 
         @media (max-width: 400px) {
-            .sidebar { height: 45vh; }
+            .sidebar { height: 55vh; }
             .sidebar.peek { height: 165px; }
             .stat-value { font-size: 14px; }
             .stat-label { font-size: 9px; }
