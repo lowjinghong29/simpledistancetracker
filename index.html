@@ -491,7 +491,7 @@
             .sidebar {
                 top: auto; right: 12px; bottom: 12px; left: 12px;
                 width: calc(100% - 24px);
-                height: 55vh;
+                height: 45vh;
                 border-radius: 24px;
                 box-shadow: 0 16px 40px rgba(0,0,0,0.15);
                 transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease, background 0.4s ease;
@@ -499,7 +499,7 @@
             }
             .sidebar.collapsed { transform: translateY(100%); }
             .sidebar.peek {
-                height: 180px;
+                height: 135px;
                 transform: translateY(0);
                 opacity: 1;
                 pointer-events: auto;
@@ -575,8 +575,8 @@
         }
 
         @media (max-width: 400px) {
-            .sidebar { height: 55vh; }
-            .sidebar.peek { height: 165px; }
+            .sidebar { height: 45vh; }
+            .sidebar.peek { height: 135px; }
             .stat-value { font-size: 14px; }
             .stat-label { font-size: 9px; }
             .card-name { font-size: 12px; }
@@ -1211,9 +1211,19 @@ filterBar.addEventListener('click', e => {
 document.getElementById('searchInput').addEventListener('input', e => { searchQuery = e.target.value; render(); });
 document.getElementById('sortSelect').addEventListener('change', e => { sortMode = e.target.value; render(); });
 
-document.getElementById('sidebarToggle').addEventListener('click', () => document.getElementById('sidebar').classList.remove('collapsed'));
+document.getElementById('sidebarToggle').addEventListener('click', () => {
+    const sb = document.getElementById('sidebar');
+    sb.classList.remove('collapsed', 'peek');
+});
 document.getElementById('collapseBtn').addEventListener('click', () => document.getElementById('sidebar').classList.add('collapsed'));
-document.getElementById('dragHandle').addEventListener('click', () => document.getElementById('sidebar').classList.add('collapsed'));
+document.getElementById('dragHandle').addEventListener('click', () => {
+    const sb = document.getElementById('sidebar');
+    if (window.innerWidth <= 860) {
+        sb.classList.toggle('peek');
+    } else {
+        sb.classList.add('collapsed');
+    }
+});
 
 // ==========================================
 // THEME TOGGLE
