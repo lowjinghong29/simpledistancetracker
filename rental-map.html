@@ -438,15 +438,148 @@
         .popup-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
 
         /* ==========================================
+           DRAG HANDLE (mobile)
+           ========================================== */
+        .drag-handle {
+            display: none;
+            width: 100%;
+            padding: 10px 0 4px;
+            cursor: grab;
+            touch-action: none;
+            flex-shrink: 0;
+        }
+        .drag-handle-bar {
+            width: 36px; height: 4px;
+            background: var(--text-muted);
+            border-radius: 2px;
+            margin: 0 auto;
+            opacity: 0.5;
+            transition: opacity var(--transition);
+        }
+        .drag-handle:active .drag-handle-bar { opacity: 0.8; }
+
+        /* ==========================================
+           MOBILE FAB BUTTONS
+           ========================================== */
+        .mobile-fab-group {
+            display: none;
+            position: fixed;
+            top: 12px; right: 12px;
+            z-index: 1001;
+            flex-direction: row;
+            gap: 8px;
+        }
+        .mobile-fab {
+            width: 40px; height: 40px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--bg-surface);
+            box-shadow: var(--shadow-md);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all var(--transition);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mobile-fab:active { background: var(--bg-hover); transform: scale(0.94); }
+        .mobile-fab svg { width: 18px; height: 18px; }
+
+        /* ==========================================
            RESPONSIVE
            ========================================== */
         @media (max-width: 860px) {
-            .sidebar { top: auto; right: 0; bottom: 0; left: 0; width: 100%; height: 55vh; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+            .sidebar {
+                top: auto; right: 0; bottom: 0; left: 0;
+                width: 100%;
+                height: 62vh;
+                border-radius: 20px 20px 0 0;
+                transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease, background 0.4s ease;
+                will-change: transform, height;
+            }
             .sidebar.collapsed { transform: translateY(100%); }
-            .sidebar-toggle { display: flex !important; top: auto; bottom: 16px; right: 16px; }
+            .sidebar.peek {
+                height: 180px;
+                transform: translateY(0);
+                opacity: 1;
+                pointer-events: auto;
+            }
+            .sidebar.peek .search-wrapper,
+            .sidebar.peek .filter-section,
+            .sidebar.peek .sort-bar,
+            .sidebar.peek .property-list {
+                display: none;
+            }
+
+            .drag-handle { display: block; }
+
+            .sidebar-header { padding: 12px 16px 0; }
+            .sidebar-brand { margin-bottom: 10px; gap: 10px; }
+            .brand-icon { width: 34px; height: 34px; }
+            .brand-icon svg { width: 18px; height: 18px; }
+            .brand-text h1 { font-size: 14px; }
+            .brand-text p { font-size: 11px; }
+
+            /* Hide desktop header actions on mobile */
+            .header-actions { display: none; }
+
+            .stats-row { padding: 10px 16px; gap: 6px; }
+            .stat-card { padding: 10px 6px; }
+            .stat-value { font-size: 15px; }
+
+            .search-wrapper { padding: 0 16px; margin-bottom: 8px; }
+            .search-input { height: 38px; font-size: 13px; }
+            .search-wrapper > svg { left: 30px; }
+
+            .filter-section { padding: 0 16px 8px; gap: 5px; }
+            .filter-chip { height: 28px; padding: 0 10px; font-size: 11px; }
+
+            .sort-bar { padding: 0 16px 8px; }
+            .property-list { padding: 0 8px; }
+            .property-card { padding: 10px 10px; }
+            .card-marker { width: 30px; height: 30px; font-size: 11px; }
+            .card-name { font-size: 12.5px; }
+            .card-km { font-size: 15px; }
+
+            .sidebar-toggle { display: flex !important; top: auto; bottom: 16px; right: 12px; z-index: 1002; }
+            .mobile-fab-group { display: flex; }
+
             .legend-panel { display: none; }
-            .detail-panel { transform: translateX(-50%) translateY(120%); width: calc(100% - 32px); bottom: calc(55vh + 8px); }
+
+            .detail-panel {
+                transform: translateX(-50%) translateY(120%);
+                width: calc(100% - 24px);
+                bottom: 12px;
+                left: 50%;
+                padding: 16px 18px;
+                border-radius: var(--radius-md);
+                gap: 14px;
+                z-index: 1003;
+            }
             .detail-panel.visible { transform: translateX(-50%) translateY(0); }
+            .detail-name { font-size: 14px; }
+            .detail-km-big { font-size: 26px; }
+            .detail-stat-value { font-size: 12px; }
+
+            .route-loading {
+                transform: translateX(-50%);
+                top: 60px;
+                font-size: 11px;
+                padding: 6px 16px;
+            }
+
+            /* Leaflet overrides for mobile */
+            .leaflet-control-zoom { margin-top: 56px !important; }
+            .leaflet-control-zoom a { width: 32px !important; height: 32px !important; line-height: 32px !important; font-size: 16px !important; }
+        }
+
+        @media (max-width: 400px) {
+            .sidebar { height: 58vh; }
+            .sidebar.peek { height: 165px; }
+            .stat-value { font-size: 14px; }
+            .stat-label { font-size: 9px; }
+            .card-name { font-size: 12px; }
+            .detail-panel { padding: 14px 14px; }
+            .detail-km-big { font-size: 24px; }
         }
 
         @media (prefers-reduced-motion: reduce) {
