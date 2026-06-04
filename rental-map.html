@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAR UMT Rental Finder</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ==========================================
+           DESIGN TOKENS — DARK
+           ========================================== */
+        [data-theme="dark"] {
+            --bg-body: #070b14;
+            --bg-primary: #0a0f1a;
+            --bg-surface: #111827;
+            --bg-elevated: #1a2236;
+            --bg-hover: #1f2b42;
+            --bg-card-active: rgba(56,189,248,0.08);
+            --border: rgba(148,163,184,0.08);
+            --border-active: rgba(99,179,237,0.3);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #38bdf8;
+            --accent-soft: rgba(56,189,248,0.12);
+            --teal: #2dd4bf;
+            --teal-soft: rgba(45,212,191,0.1);
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.35);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+            --popup-bg: #1a2236;
+            --scrollbar-thumb: rgba(148,163,184,0.15);
+            --scrollbar-hover: rgba(148,163,184,0.25);
+            --radius-label-bg: rgba(10,15,26,0.9);
+            --map-attr-bg: rgba(10,15,26,0.7);
+            --map-attr-color: #64748b;
+        }
+
+        /* ==========================================
+           DESIGN TOKENS — LIGHT
+           ========================================== */
+        [data-theme="light"] {
+            --bg-body: #f1f5f9;
+            --bg-primary: #f8fafc;
+            --bg-surface: #ffffff;
+            --bg-elevated: #f1f5f9;
+            --bg-hover: #e2e8f0;
+            --bg-card-active: rgba(14,165,233,0.07);
+            --border: rgba(15,23,42,0.08);
+            --border-active: rgba(14,165,233,0.35);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --accent: #0284c7;
+            --accent-soft: rgba(14,165,233,0.1);
+            --teal: #0d9488;
+            --teal-soft: rgba(13,148,136,0.1);
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
+            --popup-bg: #ffffff;
+            --scrollbar-thumb: rgba(15,23,42,0.12);
+            --scrollbar-hover: rgba(15,23,42,0.2);
+            --radius-label-bg: rgba(255,255,255,0.92);
+            --map-attr-bg: rgba(255,255,255,0.7);
+            --map-attr-color: #94a3b8;
+        }
+
+        /* ==========================================
+           SHARED TOKENS
+           ========================================== */
+        :root {
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+            --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+            --font: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        /* ==========================================
+           RESET & BASE
+           ========================================== */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        body {
+            font-family: var(--font);
+            background: var(--bg-body);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            transition: background 0.4s ease, color 0.3s ease;
+        }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
+        /* ==========================================
+           MAP
+           ========================================== */
+        #map { position: fixed; inset: 0; z-index: 1; }
+
+        .leaflet-control-zoom { border: none !important; box-shadow: var(--shadow-md) !important; border-radius: var(--radius-sm) !important; overflow: hidden; }
+        .leaflet-control-zoom a { background: var(--bg-surface) !important; color: var(--text-primary) !important; border-bottom: 1px solid var(--border) !important; width: 36px !important; height: 36px !important; line-height: 36px !important; font-size: 18px !important; transition: background var(--transition); }
+        .leaflet-control-zoom a:last-child { border-bottom: none !important; }
+        .leaflet-control-zoom a:hover { background: var(--bg-hover) !important; }
+
+        .leaflet-popup-content-wrapper { background: var(--popup-bg) !important; color: var(--text-primary) !important; border-radius: var(--radius-md) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-lg) !important; padding: 0 !important; }
+        .leaflet-popup-content { margin: 14px 16px !important; font-family: var(--font) !important; min-width: 180px; }
+        .leaflet-popup-tip { background: var(--popup-bg) !important; border: 1px solid var(--border) !important; }
+        .leaflet-popup-close-button { color: var(--text-muted) !important; font-size: 20px !important; padding: 6px 10px !important; }
+        .leaflet-popup-close-button:hover { color: var(--text-primary) !important; }
+
+        /* ==========================================
+           SIDEBAR
+           ========================================== */
+        .sidebar {
+            position: fixed;
+            top: 16px; right: 16px; bottom: 16px;
+            width: 400px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease, background 0.4s ease, border-color 0.3s ease;
+        }
+        .sidebar.collapsed { transform: translateX(calc(100% + 32px)); opacity: 0; pointer-events: none; }
+
+        /* ---- Header ---- */
+        .sidebar-header { padding: 20px 24px 0; }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .brand-icon {
+            width: 40px; height: 40px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, #0ea5e9, #2dd4bf);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .brand-icon svg { width: 22px; height: 22px; color: #fff; }
+
+        .brand-text h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+        .brand-text p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+        .header-actions { display: flex; gap: 6px; margin-left: auto; }
+
+        .icon-btn {
+            width: 36px; height: 36px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all var(--transition);
+        }
+        .icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .icon-btn svg { width: 18px; height: 18px; }
+
+        /* ---- Stats ---- */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 16px 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 10px;
+            text-align: center;
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
+
+        .stat-value { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+        .stat-value.v-near { color: #2dd4bf; }
+
+        [data-theme="light"] .stat-value.v-near { color: #0d9488; }
+        .stat-value.v-avg { color: #38bdf8; }
+        [data-theme="light"] .stat-value.v-avg { color: #0284c7; }
+        .stat-value.v-far { color: #fb923c; }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        /* ---- Loading state ---- */
+        .stat-value.loading, .card-km.loading {
+            background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover) 50%, var(--bg-elevated) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            color: transparent !important;
+            border-radius: 4px;
+            display: inline-block;
+            min-width: 50px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ---- Search ---- */
+        .search-wrapper {
+            padding: 0 24px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .search-wrapper > svg {
+            position: absolute; left: 38px; top: 50%; transform: translateY(-50%);
+            width: 16px; height: 16px; color: var(--text-muted); pointer-events: none;
+        }
+
+        .search-input {
+            width: 100%; height: 42px;
+            padding: 0 14px 0 40px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            font-family: var(--font); font-size: 13.5px;
+            outline: none;
+            transition: border-color var(--transition), box-shadow var(--transition), background 0.3s ease;
+        }
+        .search-input::placeholder { color: var(--text-muted); }
+        .search-input:focus { border-color: var(--border-active); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+        /* ---- Filters ---- */
+        .filter-section { padding: 0 24px 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+
+        .filter-chip {
+            height: 30px; padding: 0 12px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: var(--font); font-size: 11.5px; font-weight: 500;
+            cursor: pointer; transition: all var(--transition);
+            display: flex; align-items: center; gap: 5px; white-space: nowrap;
+        }
+        .filter-chip:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .filter-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .filter-chip.active { background: var(--accent-soft); border-color: var(--border-active); color: var(--accent); }
+
+        .chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .chip-count { font-size: 10px; background: rgba(148,163,184,0.08); padding: 1px 5px; border-radius: var(--radius-full); color: var(--text-muted); }
+        .filter-chip.active .chip-count { background: var(--accent-soft); color: var(--accent); }
+
+        /* ---- Sort ---- */
+        .sort-bar { padding: 0 24px 10px; display: flex; align-items: center; justify-content: space-between; }
+        .sort-left { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+        .sort-left strong { color: var(--text-secondary); font-weight: 700; }
+
+        .sort-select {
+            height: 30px; padding: 0 26px 0 10px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-family: var(--font); font-size: 12px; font-weight: 500;
+            cursor: pointer; outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            transition: border-color var(--transition), background 0.3s ease;
+        }
+        .sort-select:focus { border-color: var(--border-active); }
+
+        /* ---- Property List ---- */
+        .property-list { flex: 1; overflow-y: auto; padding: 0 10px; }
+
+        .property-card {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 12px; margin-bottom: 2px;
+            border-radius: var(--radius-sm);
+            cursor: pointer; transition: background var(--transition);
+            position: relative;
+        }
+        .property-card:hover { background: var(--bg-hover); }
+        .property-card:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+        .property-card.active { background: var(--bg-card-active); box-shadow: inset 0 0 0 1px var(--border-active); }
+
+        .card-marker {
+            width: 34px; height: 34px;
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 12px; font-weight: 700; color: #fff;
+        }
+        .card-body { flex: 1; min-width: 0; }
+        .card-name { font-size: 13px; font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-area { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        .card-right { text-align: right; flex-shrink: 0; min-width: 68px; }
+        .card-km { font-size: 16px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+        .card-km-unit { font-size: 10px; font-weight: 500; color: var(--text-muted); margin-left: 1px; }
+        .card-duration { font-size: 10.5px; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
+
+        .card-badge {
+            display: inline-block; padding: 2px 7px;
+            border-radius: var(--radius-full);
+            font-size: 9.5px; font-weight: 600; margin-top: 4px; letter-spacing: 0.01em;
+        }
+        .badge-walk   { background: rgba(45,212,191,0.12); color: #2dd4bf; }
+        .badge-close  { background: rgba(56,189,248,0.12); color: #38bdf8; }
+        .badge-medium { background: rgba(251,191,36,0.12); color: #fbbf24; }
+        .badge-far    { background: rgba(251,113,133,0.12); color: #fb7185; }
+
+        [data-theme="light"] .badge-walk   { background: rgba(13,148,136,0.1); color: #0f766e; }
+        [data-theme="light"] .badge-close  { background: rgba(14,165,233,0.1); color: #0369a1; }
+        [data-theme="light"] .badge-medium { background: rgba(234,179,8,0.1); color: #a16207; }
+        [data-theme="light"] .badge-far    { background: rgba(244,63,94,0.1); color: #be123c; }
+
+        /* ==========================================
+           DETAIL PANEL
+           ========================================== */
+        .detail-panel {
+            position: fixed;
+            bottom: 16px; left: 50%;
+            transform: translateX(calc(-50% - 208px)) translateY(120%);
+            z-index: 999;
+            background: var(--bg-surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+            padding: 20px 24px; width: 400px;
+            transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), background 0.4s ease;
+            display: flex; gap: 20px; align-items: center;
+        }
+        .detail-panel.visible { transform: translateX(calc(-50% - 208px)) translateY(0); }
+        .detail-left { flex: 1; min-width: 0; }
+        .detail-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; line-height: 1.3; }
+        .detail-area-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: var(--radius-full); font-size: 11px; font-weight: 600; margin-bottom: 10px; }
+        .detail-area-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .detail-stats { display: flex; gap: 20px; }
+        .detail-stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; }
+        .detail-stat-value { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+
+        .detail-right { text-align: center; flex-shrink: 0; }
+        .detail-km-big { font-size: 30px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+        .detail-km-label { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+        .detail-drive-time { font-size: 12px; font-weight: 600; margin-top: 4px; }
+
+        .detail-close {
+            position: absolute; top: 8px; right: 8px;
+            width: 28px; height: 28px;
+            border-radius: var(--radius-full); border: none;
+            background: transparent; color: var(--text-muted);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all var(--transition);
+        }
+        .detail-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+        /* ==========================================
+           SIDEBAR TOGGLE
+           ========================================== */
+        .sidebar-toggle {
+            position: fixed; top: 16px; right: 16px; z-index: 999;
+            width: 44px; height: 44px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--bg-surface); box-shadow: var(--shadow-md);
+            color: var(--text-secondary); cursor: pointer;
+            display: none; align-items: center; justify-content: center;
+            transition: all var(--transition);
+        }
+        .sidebar-toggle:hover { background: var(--bg-elevated); color: var(--text-primary); }
+        .sidebar-toggle svg { width: 20px; height: 20px; }
+        .sidebar.collapsed ~ .sidebar-toggle { display: flex; }
+
+        /* ==========================================
+           LEGEND
+           ========================================== */
+        .legend-panel {
+            position: fixed; bottom: 16px; left: 16px; z-index: 998;
+            background: var(--bg-surface); border: 1px solid var(--border);
+            border-radius: var(--radius-md); box-shadow: var(--shadow-md);
+            padding: 14px 16px; min-width: 190px;
+            transition: background 0.4s ease, border-color 0.3s ease;
+        }
+        .legend-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 600; margin-bottom: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; color: var(--text-secondary); font-weight: 500; cursor: pointer; transition: color var(--transition); }
+        .legend-item:hover { color: var(--text-primary); }
+        .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+        .legend-count { margin-left: auto; font-size: 10px; color: var(--text-muted); }
+        .legend-divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+        .legend-tarumt { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+        .legend-tarumt-dot { width: 9px; height: 9px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.4); }
+
+        .legend-radius { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+        .legend-radius-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 600; margin-bottom: 5px; }
+        .radius-row { display: flex; align-items: center; gap: 7px; padding: 2px 0; font-size: 11px; color: var(--text-muted); font-weight: 500; }
+        .radius-line { width: 14px; height: 0; border-top: 2px dashed; flex-shrink: 0; }
+
+        .legend-note { font-size: 10px; color: var(--text-muted); margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); line-height: 1.5; }
+
+        /* ==========================================
+           TAR UMT MARKER
+           ========================================== */
+        .tarumt-pin { position: relative; width: 32px; height: 32px; }
+        .tarumt-pin-core { position: absolute; inset: 6px; background: #ef4444; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 2px rgba(239,68,68,0.3), 0 2px 8px rgba(0,0,0,0.4); }
+        .tarumt-pin-ring { position: absolute; inset: 0; border: 2px solid rgba(239,68,68,0.35); border-radius: 50%; animation: pulse-ring 2s ease-out infinite; }
+        @keyframes pulse-ring { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(2.2); opacity: 0; } }
+
+        /* ==========================================
+           POPUP STYLES
+           ========================================== */
+        .popup-name { font-size: 14px; font-weight: 700; margin-bottom: 6px; line-height: 1.3; }
+        .popup-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: var(--radius-full); font-size: 11px; font-weight: 600; margin-bottom: 10px; }
+        .popup-tag-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .popup-distance { display: flex; align-items: baseline; gap: 4px; }
+        .popup-km { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }
+        .popup-km-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+        .popup-drive { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
+        .popup-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+
+        /* ==========================================
+           RESPONSIVE
+           ========================================== */
+        @media (max-width: 860px) {
+            .sidebar { top: auto; right: 0; bottom: 0; left: 0; width: 100%; height: 55vh; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+            .sidebar.collapsed { transform: translateY(100%); }
+            .sidebar-toggle { display: flex !important; top: auto; bottom: 16px; right: 16px; }
+            .legend-panel { display: none; }
+            .detail-panel { transform: translateX(-50%) translateY(120%); width: calc(100% - 32px); bottom: calc(55vh + 8px); }
+            .detail-panel.visible { transform: translateX(-50%) translateY(0); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
+
+        /* ==========================================
+           ROUTE LOADING INDICATOR
+           ========================================== */
+        .route-loading {
+            position: fixed;
+            top: 20px; left: 50%;
+            transform: translateX(calc(-50% - 208px));
+            z-index: 1001;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-full);
+            padding: 8px 20px;
+            font-size: 12px; font-weight: 600;
+            color: var(--accent);
+            box-shadow: var(--shadow-md);
+            display: none;
+            align-items: center; gap: 8px;
+        }
+        .route-loading.show { display: flex; }
+        .route-spinner {
+            width: 14px; height: 14px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- Route loading indicator -->
+<div class="route-loading" id="routeLoading">
+    <div class="route-spinner"></div>
+    Calculating route...
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-brand">
+            <div class="brand-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div class="brand-text">
+                <h1>TAR UMT Rental Finder</h1>
+                <p id="propertyCount">51 properties &middot; calculating routes...</p>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="themeToggle" aria-label="Toggle light/dark theme" title="Toggle theme">
+                    <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
+                <button class="icon-btn" id="collapseBtn" aria-label="Collapse panel" title="Collapse panel">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-value v-near loading" id="nearestStat">&nbsp;</div>
+            <div class="stat-label">Nearest</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value v-avg loading" id="avgStat">&nbsp;</div>
+            <div class="stat-label">Average</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value v-far loading" id="farthestStat">&nbsp;</div>
+            <div class="stat-label">Farthest</div>
+        </div>
+    </div>
+
+    <div class="search-wrapper">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="searchInput" placeholder="Search properties..." aria-label="Search properties">
+    </div>
+
+    <div class="filter-section" id="filterBar" role="group" aria-label="Filter by area"></div>
+
+    <div class="sort-bar">
+        <div class="sort-left"><strong id="filteredCount">51</strong> properties</div>
+        <select class="sort-select" id="sortSelect" aria-label="Sort properties">
+            <option value="distance">Nearest first</option>
+            <option value="distance-far">Farthest first</option>
+            <option value="name">Name A-Z</option>
+            <option value="area">By area</option>
+        </select>
+    </div>
+
+    <div class="property-list" id="propertyList" role="list"></div>
+</div>
+
+<!-- Sidebar toggle -->
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Open property panel">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+</button>
+
+<!-- Legend -->
+<div class="legend-panel" id="legendPanel">
+    <div class="legend-title">Areas</div>
+    <div id="legendItems"></div>
+    <div class="legend-divider"></div>
+    <div class="legend-tarumt"><div class="legend-tarumt-dot"></div>TAR UMT Setapak</div>
+    <div class="legend-radius">
+        <div class="legend-radius-title">Distance rings</div>
+        <div class="radius-row"><div class="radius-line" style="border-color:rgba(45,212,191,0.5);"></div>1 km</div>
+        <div class="radius-row"><div class="radius-line" style="border-color:rgba(56,189,248,0.4);"></div>2 km</div>
+        <div class="radius-row"><div class="radius-line" style="border-color:rgba(251,191,36,0.3);"></div>4 km</div>
+    </div>
+    <div class="legend-note">Distances are <strong>driving routes</strong> via OSRM, not straight-line.</div>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-panel" id="detailPanel">
+    <div class="detail-left">
+        <div class="detail-name" id="detailName">--</div>
+        <div class="detail-area-tag" id="detailTag"><span class="detail-area-dot" id="detailDot"></span><span id="detailArea">--</span></div>
+        <div class="detail-stats">
+            <div><div class="detail-stat-label">Drive Time</div><div class="detail-stat-value" id="detailTime">--</div></div>
+            <div><div class="detail-stat-label">Straight Line</div><div class="detail-stat-value" id="detailStraight">--</div></div>
+        </div>
+    </div>
+    <div class="detail-right">
+        <div class="detail-km-big" id="detailKm">--</div>
+        <div class="detail-km-label">km driving</div>
+        <div class="detail-drive-time" id="detailDriveLabel" style="color:var(--teal);">--</div>
+    </div>
+    <button class="detail-close" id="detailClose" aria-label="Close detail panel">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+</div>
+
+<script>
+// ==========================================
+// DATA
+// ==========================================
+const TARUMT = { lat: 3.2151, lng: 101.7283 };
+
+const AREA_COLORS = {
+    "Prima Setapak & Danau Kota": { color: "#f59e0b", bg: "rgba(245,158,11,0.10)" },
+    "Wangsa Maju":                { color: "#a78bfa", bg: "rgba(167,139,250,0.10)" },
+    "Gombak & Taman Melati":      { color: "#34d399", bg: "rgba(52,211,153,0.10)" },
+    "Taman Melawati":             { color: "#22d3ee", bg: "rgba(34,211,238,0.10)" },
+    "Sentul":                     { color: "#fb7185", bg: "rgba(251,113,133,0.10)" },
+    "Titiwangsa & Setiawangsa":   { color: "#f472b6", bg: "rgba(244,114,182,0.10)" },
+};
+
+const AREA_SHORT = {
+    "Prima Setapak & Danau Kota": "Setapak",
+    "Wangsa Maju": "W. Maju",
+    "Gombak & Taman Melati": "Gombak",
+    "Taman Melawati": "Melawati",
+    "Sentul": "Sentul",
+    "Titiwangsa & Setiawangsa": "Titiwangsa",
+};
+
+const properties = [
+    { name: "Prima Setapak Condominium", area: "Prima Setapak & Danau Kota", lat: 3.1981, lng: 101.7113 },
+    { name: "Prima Setapak Flat / Apartment", area: "Prima Setapak & Danau Kota", lat: 3.1981, lng: 101.7113 },
+    { name: "PV9 Residence", area: "Prima Setapak & Danau Kota", lat: 3.2180, lng: 101.7251 },
+    { name: "Vista Wirajaya 1", area: "Prima Setapak & Danau Kota", lat: 3.2166, lng: 101.7245 },
+    { name: "Vista Wirajaya 2", area: "Prima Setapak & Danau Kota", lat: 3.2177, lng: 101.7248 },
+    { name: "Platinum Lake PV12", area: "Prima Setapak & Danau Kota", lat: 3.2064, lng: 101.7179 },
+    { name: "Platinum Lake PV13", area: "Prima Setapak & Danau Kota", lat: 3.2013, lng: 101.7154 },
+    { name: "Platinum Lake PV15", area: "Prima Setapak & Danau Kota", lat: 3.2023, lng: 101.7163 },
+    { name: "Platinum Lake PV16", area: "Prima Setapak & Danau Kota", lat: 3.2014, lng: 101.7171 },
+    { name: "Platinum Victory PV18", area: "Prima Setapak & Danau Kota", lat: 3.2031, lng: 101.7131 },
+    { name: "Platinum Victory PV20", area: "Prima Setapak & Danau Kota", lat: 3.1989, lng: 101.7221 },
+    { name: "Platinum Victory PV21", area: "Prima Setapak & Danau Kota", lat: 3.1995, lng: 101.7197 },
+    { name: "MH Platinum 2 Residences", area: "Prima Setapak & Danau Kota", lat: 3.1956, lng: 101.7223 },
+    { name: "Bennington Residences @ SkyArena", area: "Prima Setapak & Danau Kota", lat: 3.1938, lng: 101.7147 },
+    { name: "Curvo Residences @ Setapak", area: "Prima Setapak & Danau Kota", lat: 3.1917, lng: 101.7155 },
+    { name: "EdgeWood Residences @ SkySanctuary", area: "Prima Setapak & Danau Kota", lat: 3.1915, lng: 101.7198 },
+    { name: "The Loft @ ZetaPark", area: "Prima Setapak & Danau Kota", lat: 3.2045, lng: 101.7209 },
+    { name: "Danau Kota Suite Apartments", area: "Prima Setapak & Danau Kota", lat: 3.2089, lng: 101.7192 },
+    { name: "288 Residency", area: "Prima Setapak & Danau Kota", lat: 3.1969, lng: 101.7075 },
+    { name: "126 Plazas", area: "Prima Setapak & Danau Kota", lat: 3.1989, lng: 101.7153 },
+    { name: "Wangsa Metroview Condominium", area: "Wangsa Maju", lat: 3.2042, lng: 101.7357 },
+    { name: "Menara Alpha", area: "Wangsa Maju", lat: 3.2075, lng: 101.7363 },
+    { name: "TAR Villa", area: "Wangsa Maju", lat: 3.2082, lng: 101.7292 },
+    { name: "The Hamilton", area: "Wangsa Maju", lat: 3.1975, lng: 101.7383 },
+    { name: "Seasons Garden Residences", area: "Wangsa Maju", lat: 3.1879, lng: 101.7340 },
+    { name: "Lexa Residence", area: "Wangsa Maju", lat: 3.1914, lng: 101.7364 },
+    { name: "Henna Residence", area: "Wangsa Maju", lat: 3.1910, lng: 101.7383 },
+    { name: "Fera Residence", area: "Wangsa Maju", lat: 3.1917, lng: 101.7377 },
+    { name: "Quinn Residence", area: "Wangsa Maju", lat: 3.1989, lng: 101.7382 },
+    { name: "Altris Wangsa Maju", area: "Wangsa Maju", lat: 3.1907, lng: 101.7374 },
+    { name: "M Astra", area: "Wangsa Maju", lat: 3.1988, lng: 101.7442 },
+    { name: "Villa Wangsamas", area: "Wangsa Maju", lat: 3.1941, lng: 101.7362 },
+    { name: "Platinum Hill PV2", area: "Gombak & Taman Melati", lat: 3.2240, lng: 101.7291 },
+    { name: "Platinum Hill PV3", area: "Gombak & Taman Melati", lat: 3.2230, lng: 101.7299 },
+    { name: "Platinum Hill PV5", area: "Gombak & Taman Melati", lat: 3.2232, lng: 101.7285 },
+    { name: "Platinum Hill PV6", area: "Gombak & Taman Melati", lat: 3.2222, lng: 101.7307 },
+    { name: "Platinum Hill PV8", area: "Gombak & Taman Melati", lat: 3.2216, lng: 101.7298 },
+    { name: "Platinum Melati Residences", area: "Gombak & Taman Melati", lat: 3.2240, lng: 101.7287 },
+    { name: "M3 Residency", area: "Gombak & Taman Melati", lat: 3.2180, lng: 101.7184 },
+    { name: "The Ridge @ KL East", area: "Gombak & Taman Melati", lat: 3.2243, lng: 101.7313 },
+    { name: "The Veo", area: "Gombak & Taman Melati", lat: 3.2260, lng: 101.7312 },
+    { name: "Ayuman Suites", area: "Gombak & Taman Melati", lat: 3.2343, lng: 101.7144 },
+    { name: "KL Traders Square", area: "Gombak & Taman Melati", lat: 3.2039, lng: 101.7025 },
+    { name: "1 Harmonis Condominium", area: "Gombak & Taman Melati", lat: 3.2341, lng: 101.7158 },
+    { name: "SERINI Melawati", area: "Taman Melawati", lat: 3.2131, lng: 101.7464 },
+    { name: "Saville @ Melawati", area: "Taman Melawati", lat: 3.2169, lng: 101.7387 },
+    { name: "3 Residen @ Melawati", area: "Taman Melawati", lat: 3.2213, lng: 101.7356 },
+    { name: "Nadayu 62", area: "Taman Melawati", lat: 3.2213, lng: 101.7506 },
+    { name: "Nadayu 63", area: "Taman Melawati", lat: 3.2225, lng: 101.7528 },
+    { name: "Upperville Melawati", area: "Taman Melawati", lat: 3.2227, lng: 101.7567 },
+    { name: "SkyAwani 3 Residence", area: "Sentul", lat: 3.1919, lng: 101.7226 },
+    { name: "Sentul Point Suite Residences", area: "Sentul", lat: 3.2019, lng: 101.6887 },
+    { name: "Maxim Citylights", area: "Sentul", lat: 3.2073, lng: 101.6905 },
+    { name: "M Centura", area: "Sentul", lat: 3.2038, lng: 101.6901 },
+    { name: "M Arisa", area: "Sentul", lat: 3.2030, lng: 101.6905 },
+    { name: "Rica Residence Sentul", area: "Sentul", lat: 3.1779, lng: 101.6879 },
+    { name: "Sentul Utama Condo", area: "Sentul", lat: 3.1970, lng: 101.6984 },
+    { name: "Titiwangsa Sentral Condominium", area: "Titiwangsa & Setiawangsa", lat: 3.1708, lng: 101.6966 },
+    { name: "The Reach @ Titiwangsa", area: "Titiwangsa & Setiawangsa", lat: 3.1871, lng: 101.7048 },
+    { name: "D'Brightton @ Titiwangsa", area: "Titiwangsa & Setiawangsa", lat: 3.1885, lng: 101.7082 },
+    { name: "Seri Maya Condominium (Setiawangsa)", area: "Titiwangsa & Setiawangsa", lat: 3.1753, lng: 101.7338 },
+    { name: "The Valleys @ SkySierra (Setiawangsa)", area: "Titiwangsa & Setiawangsa", lat: 3.1765, lng: 101.7477 },
+];
+
+// ==========================================
+// UTILITIES
+// ==========================================
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Init with straight-line distance as fallback
+properties.forEach(p => {
+    p.straightLine = haversine(p.lat, p.lng, TARUMT.lat, TARUMT.lng);
+    p.distance = p.straightLine; // will be replaced by driving distance
+    p.duration = null; // driving duration in minutes
+    p.routeLoaded = false;
+});
+
+function formatDuration(mins) {
+    if (mins == null) return '--';
+    if (mins < 1) return '< 1 min';
+    if (mins < 60) return Math.round(mins) + ' min';
+    const h = Math.floor(mins / 60);
+    const m = Math.round(mins % 60);
+    return h + 'h ' + m + 'm';
+}
+
+function getBadge(km) {
+    if (km < 1.5) return { cls: "badge-walk", text: "Very Near" };
+    if (km < 3)   return { cls: "badge-close", text: "Close" };
+    if (km < 6)   return { cls: "badge-medium", text: "Moderate" };
+    return { cls: "badge-far", text: "Far" };
+}
+
+function kmColor(km) {
+    if (km < 1.5) return "#2dd4bf";
+    if (km < 3)   return "#38bdf8";
+    if (km < 6)   return "#fbbf24";
+    return "#fb7185";
+}
+
+// ==========================================
+// MAP
+// ==========================================
+const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([TARUMT.lat, TARUMT.lng], 14);
+L.control.zoom({ position: 'topleft' }).addTo(map);
+L.control.attribution({ position: 'bottomleft', prefix: false }).addTo(map).addAttribution('&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>');
+
+// Tile layers for both themes
+const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+const lightTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+let currentTiles = darkTiles;
+darkTiles.addTo(map);
+
+// TAR UMT marker
+const tarumtIcon = L.divIcon({
+    className: '',
+    html: '<div class="tarumt-pin"><div class="tarumt-pin-ring"></div><div class="tarumt-pin-core"></div></div>',
+    iconSize: [32, 32], iconAnchor: [16, 16]
+});
+L.marker([TARUMT.lat, TARUMT.lng], { icon: tarumtIcon, zIndex: 9999 }).addTo(map)
+    .bindPopup(`<div class="popup-name">TAR UMT Setapak</div><div class="popup-tag" style="background:rgba(239,68,68,0.12);color:#ef4444;"><span class="popup-tag-dot" style="background:#ef4444;"></span>Your University</div><div class="popup-sub">Tunku Abdul Rahman University of Management and Technology<br>Jalan Genting Kelang, Setapak, 53300 KL</div>`);
+
+// Radius circles
+[
+    { r: 1000, c: 'rgba(45,212,191,0.35)', f: 'rgba(45,212,191,0.04)' },
+    { r: 2000, c: 'rgba(56,189,248,0.30)', f: 'rgba(56,189,248,0.03)' },
+    { r: 4000, c: 'rgba(251,191,36,0.20)', f: 'rgba(251,191,36,0.02)' },
+].forEach(o => L.circle([TARUMT.lat, TARUMT.lng], { radius: o.r, color: o.c, weight: 1.5, fillColor: o.f, fillOpacity: 1, dashArray: '6,5' }).addTo(map));
+
+[1000, 2000, 4000].forEach(r => {
+    L.marker([TARUMT.lat, TARUMT.lng + r / 111320], {
+        icon: L.divIcon({
+            className: '',
+            html: `<div style="font-family:Inter,sans-serif;background:var(--radius-label-bg);color:var(--text-muted);padding:2px 7px;border-radius:4px;font-size:10px;white-space:nowrap;border:1px solid var(--border);font-weight:500;">${r / 1000} km</div>`,
+            iconAnchor: [-6, 8]
+        })
+    }).addTo(map);
+});
+
+// Property markers
+const markers = {};
+properties.forEach(prop => {
+    const { color } = AREA_COLORS[prop.area];
+    const icon = L.divIcon({
+        className: '',
+        html: `<div style="width:12px;height:12px;background:${color};border:2px solid rgba(255,255,255,0.85);border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.5);transition:transform 0.2s;cursor:pointer;" onmouseover="this.style.transform='scale(1.5)'" onmouseout="this.style.transform='scale(1)'"></div>`,
+        iconSize: [12, 12], iconAnchor: [6, 6]
+    });
+    const marker = L.marker([prop.lat, prop.lng], { icon }).addTo(map);
+    marker.on('click', () => selectProperty(prop));
+    markers[prop.name] = marker;
+});
+
+function updatePopup(prop) {
+    const { color, bg } = AREA_COLORS[prop.area];
+    const badge = getBadge(prop.distance);
+    const durText = prop.duration != null ? `<div class="popup-drive">${formatDuration(prop.duration)} drive</div>` : '';
+    markers[prop.name].bindPopup(`
+        <div class="popup-name">${prop.name}</div>
+        <div class="popup-tag" style="background:${bg};color:${color};"><span class="popup-tag-dot" style="background:${color};"></span>${AREA_SHORT[prop.area]}</div>
+        <div class="popup-distance"><span class="popup-km" style="color:${badge.cls.includes('walk')?'#2dd4bf':badge.cls.includes('close')?'#38bdf8':badge.cls.includes('medium')?'#fbbf24':'#fb7185'};">${prop.distance.toFixed(1)}</span><span class="popup-km-label">km driving</span></div>
+        ${durText}
+        <div class="popup-sub">Straight line: ${prop.straightLine.toFixed(2)} km</div>
+    `);
+}
+
+// ==========================================
+// OSRM ROUTING — BATCH TABLE API
+// ==========================================
+async function fetchDrivingDistances() {
+    // Build coordinates string: TAR UMT first, then all properties
+    const coords = [`${TARUMT.lng},${TARUMT.lat}`];
+    properties.forEach(p => coords.push(`${p.lng},${p.lat}`));
+
+    // Split into batches of 50 destinations (OSRM limit ~100 coords per request)
+    const batchSize = 50;
+    const batches = [];
+    for (let i = 0; i < properties.length; i += batchSize) {
+        const batchProps = properties.slice(i, Math.min(i + batchSize, properties.length));
+        const batchCoords = [`${TARUMT.lng},${TARUMT.lat}`];
+        batchProps.forEach(p => batchCoords.push(`${p.lng},${p.lat}`));
+
+        const destinations = batchProps.map((_, j) => j + 1).join(';');
+        const url = `https://router.project-osrm.org/table/v1/driving/${batchCoords.join(';')}?sources=0&destinations=${destinations}&annotations=distance,duration`;
+        batches.push({ url, startIdx: i, props: batchProps });
+    }
+
+    let success = 0;
+    for (const batch of batches) {
+        try {
+            const res = await fetch(batch.url);
+            const data = await res.json();
+            if (data.code === 'Ok') {
+                const distances = data.distances[0]; // meters
+                const durations = data.durations[0]; // seconds
+                batch.props.forEach((prop, j) => {
+                    if (distances[j] != null && distances[j] > 0) {
+                        prop.distance = distances[j] / 1000; // convert to km
+                        prop.duration = durations[j] / 60;   // convert to minutes
+                        prop.routeLoaded = true;
+                        success++;
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('OSRM table batch failed:', e);
+        }
+    }
+
+    // Update all popups
+    properties.forEach(updatePopup);
+
+    // Re-render
+    render();
+
+    // Update header
+    document.getElementById('propertyCount').textContent =
+        success > 0
+            ? `${properties.length} properties \u00b7 driving distances loaded`
+            : `${properties.length} properties \u00b7 using straight-line (API unavailable)`;
+
+    // Remove loading shimmer from stats
+    document.querySelectorAll('.stat-value.loading').forEach(el => el.classList.remove('loading'));
+}
+
+// ==========================================
+// ROUTE DRAWING ON CLICK
+// ==========================================
+let activeRoute = null;
+let activeDistLabel = null;
+let activePropertyName = null;
+
+async function fetchAndDrawRoute(prop) {
+    const loader = document.getElementById('routeLoading');
+    loader.classList.add('show');
+
+    try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${prop.lng},${prop.lat};${TARUMT.lng},${TARUMT.lat}?overview=full&geometries=geojson&steps=false`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.code === 'Ok' && data.routes.length > 0) {
+            const route = data.routes[0];
+            const geojson = route.geometry;
+
+            // Update distance/duration from route API (more accurate)
+            prop.distance = route.distance / 1000;
+            prop.duration = route.duration / 60;
+            prop.routeLoaded = true;
+            updatePopup(prop);
+
+            // Draw the actual road route
+            if (activeRoute) map.removeLayer(activeRoute);
+            const { color } = AREA_COLORS[prop.area];
+            activeRoute = L.geoJSON(geojson, {
+                style: { color, weight: 4, opacity: 0.85, lineCap: 'round', lineJoin: 'round' }
+            }).addTo(map);
+
+            // Fit map to route bounds
+            map.fitBounds(activeRoute.getBounds(), { padding: [80, 440, 80, 80], maxZoom: 16 });
+
+            return true;
+        }
+    } catch (e) {
+        console.warn('Route fetch failed:', e);
+    } finally {
+        loader.classList.remove('show');
+    }
+    return false;
+}
+
+async function selectProperty(prop) {
+    // Clean up old
+    if (activeRoute) map.removeLayer(activeRoute);
+    if (activeDistLabel) map.removeLayer(activeDistLabel);
+
+    // Fetch and draw real route
+    const drawn = await fetchAndDrawRoute(prop);
+
+    if (!drawn) {
+        // Fallback: straight dashed line
+        const { color } = AREA_COLORS[prop.area];
+        activeRoute = L.polyline(
+            [[prop.lat, prop.lng], [TARUMT.lat, TARUMT.lng]],
+            { color, weight: 2.5, opacity: 0.7, dashArray: '8,6' }
+        ).addTo(map);
+        map.panTo([prop.lat, prop.lng], { animate: true });
+    }
+
+    // Distance label at midpoint
+    const midLat = (prop.lat + TARUMT.lat) / 2;
+    const midLng = (prop.lng + TARUMT.lng) / 2;
+    const badge = getBadge(prop.distance);
+    activeDistLabel = L.marker([midLat, midLng], {
+        icon: L.divIcon({
+            className: '',
+            html: `<div style="font-family:Inter,sans-serif;background:${AREA_COLORS[prop.area].color};color:#fff;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,0.4);letter-spacing:-0.01em;">${prop.distance.toFixed(1)} km &middot; ${formatDuration(prop.duration)}</div>`,
+            iconAnchor: [60, 14]
+        })
+    }).addTo(map);
+
+    // Update detail panel
+    const { color, bg } = AREA_COLORS[prop.area];
+    document.getElementById('detailName').textContent = prop.name;
+    document.getElementById('detailArea').textContent = prop.area;
+    document.getElementById('detailDot').style.background = color;
+    document.getElementById('detailTag').style.background = bg;
+    document.getElementById('detailTag').style.color = color;
+    document.getElementById('detailTime').textContent = formatDuration(prop.duration);
+    document.getElementById('detailStraight').textContent = prop.straightLine.toFixed(2) + ' km';
+    document.getElementById('detailKm').textContent = prop.distance.toFixed(1);
+    document.getElementById('detailKm').style.color = kmColor(prop.distance);
+    document.getElementById('detailDriveLabel').textContent = formatDuration(prop.duration) + ' drive';
+    document.getElementById('detailPanel').classList.add('visible');
+
+    // Highlight sidebar card
+    activePropertyName = prop.name;
+    document.querySelectorAll('.property-card').forEach(c => c.classList.toggle('active', c.dataset.name === prop.name));
+
+    // Open popup
+    markers[prop.name].openPopup();
+
+    // Re-render to update the card that was clicked (with new driving data)
+    render();
+}
+
+document.getElementById('detailClose').addEventListener('click', () => {
+    document.getElementById('detailPanel').classList.remove('visible');
+    if (activeRoute) map.removeLayer(activeRoute);
+    if (activeDistLabel) map.removeLayer(activeDistLabel);
+    activePropertyName = null;
+    document.querySelectorAll('.property-card.active').forEach(c => c.classList.remove('active'));
+});
+
+// ==========================================
+// SIDEBAR
+// ==========================================
+let activeFilter = 'all';
+let searchQuery = '';
+let sortMode = 'distance';
+
+// Filters
+const filterBar = document.getElementById('filterBar');
+function makeChip(text, area, dotColor, count) {
+    const btn = document.createElement('button');
+    btn.className = 'filter-chip' + (area === 'all' ? ' active' : '');
+    btn.dataset.area = area;
+    btn.setAttribute('aria-pressed', area === 'all' ? 'true' : 'false');
+    btn.innerHTML = (dotColor ? `<span class="chip-dot" style="background:${dotColor}"></span>` : '') + text + `<span class="chip-count">${count}</span>`;
+    filterBar.appendChild(btn);
+}
+makeChip('All', 'all', null, properties.length);
+Object.entries(AREA_COLORS).forEach(([area, { color }]) => makeChip(AREA_SHORT[area], area, color, properties.filter(p => p.area === area).length));
+
+// Legend
+const legendItems = document.getElementById('legendItems');
+Object.entries(AREA_COLORS).forEach(([area, { color }]) => {
+    const count = properties.filter(p => p.area === area).length;
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-dot" style="background:${color}"></div>${AREA_SHORT[area]}<span class="legend-count">${count}</span>`;
+    item.style.cursor = 'pointer';
+    item.addEventListener('click', () => document.querySelector(`.filter-chip[data-area="${area}"]`).click());
+    legendItems.appendChild(item);
+});
+
+function getFiltered() {
+    let list = properties.filter(p =>
+        (activeFilter === 'all' || p.area === activeFilter) &&
+        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    switch (sortMode) {
+        case 'distance': list.sort((a, b) => a.distance - b.distance); break;
+        case 'distance-far': list.sort((a, b) => b.distance - a.distance); break;
+        case 'name': list.sort((a, b) => a.name.localeCompare(b.name)); break;
+        case 'area': list.sort((a, b) => a.area.localeCompare(b.area) || a.distance - b.distance); break;
+    }
+    return list;
+}
+
+function render() {
+    const filtered = getFiltered();
+    const listEl = document.getElementById('propertyList');
+
+    listEl.innerHTML = filtered.map((p, i) => {
+        const { color, bg } = AREA_COLORS[p.area];
+        const badge = getBadge(p.distance);
+        const isActive = p.name === activePropertyName;
+        const durStr = p.duration != null ? formatDuration(p.duration) : '--';
+        const loadingCls = p.routeLoaded ? '' : ' loading';
+        return `
+            <div class="property-card${isActive ? ' active' : ''}" data-name="${p.name}" role="listitem" tabindex="0">
+                <div class="card-marker" style="background:${bg};color:${color};">${i + 1}</div>
+                <div class="card-body">
+                    <div class="card-name">${p.name}</div>
+                    <div class="card-area">${AREA_SHORT[p.area]}</div>
+                </div>
+                <div class="card-right">
+                    <div class="card-km${loadingCls}" style="color:${kmColor(p.distance)};">${p.distance.toFixed(1)}<span class="card-km-unit">km</span></div>
+                    <div class="card-duration">${durStr}</div>
+                    <div class="card-badge ${badge.cls}">${badge.text}</div>
+                </div>
+            </div>`;
+    }).join('');
+
+    // Attach click events
+    listEl.querySelectorAll('.property-card').forEach(card => {
+        const handler = () => {
+            const prop = properties.find(p => p.name === card.dataset.name);
+            if (prop) selectProperty(prop);
+        };
+        card.addEventListener('click', handler);
+        card.addEventListener('keydown', e => { if (e.key === 'Enter') handler(); });
+    });
+
+    document.getElementById('filteredCount').textContent = filtered.length;
+
+    // Stats
+    if (filtered.length > 0) {
+        const dists = filtered.map(p => p.distance);
+        const nearest = Math.min(...dists);
+        const farthest = Math.max(...dists);
+        const avg = dists.reduce((s, d) => s + d, 0) / dists.length;
+        document.getElementById('nearestStat').textContent = nearest.toFixed(1) + ' km';
+        document.getElementById('avgStat').textContent = avg.toFixed(1) + ' km';
+        document.getElementById('farthestStat').textContent = farthest.toFixed(1) + ' km';
+    }
+
+    // Marker visibility
+    properties.forEach(p => markers[p.name].setOpacity(filtered.some(f => f.name === p.name) ? 1 : 0.12));
+}
+
+filterBar.addEventListener('click', e => {
+    const chip = e.target.closest('.filter-chip');
+    if (!chip) return;
+    filterBar.querySelectorAll('.filter-chip').forEach(c => { c.classList.remove('active'); c.setAttribute('aria-pressed', 'false'); });
+    chip.classList.add('active');
+    chip.setAttribute('aria-pressed', 'true');
+    activeFilter = chip.dataset.area;
+    render();
+});
+
+document.getElementById('searchInput').addEventListener('input', e => { searchQuery = e.target.value; render(); });
+document.getElementById('sortSelect').addEventListener('change', e => { sortMode = e.target.value; render(); });
+
+document.getElementById('sidebarToggle').addEventListener('click', () => document.getElementById('sidebar').classList.remove('collapsed'));
+document.getElementById('collapseBtn').addEventListener('click', () => document.getElementById('sidebar').classList.add('collapsed'));
+
+// ==========================================
+// THEME TOGGLE
+// ==========================================
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('rental-map-theme', theme);
+
+    // Swap map tiles
+    if (theme === 'light' && currentTiles !== lightTiles) {
+        map.removeLayer(darkTiles);
+        lightTiles.addTo(map);
+        currentTiles = lightTiles;
+    } else if (theme === 'dark' && currentTiles !== darkTiles) {
+        map.removeLayer(lightTiles);
+        darkTiles.addTo(map);
+        currentTiles = darkTiles;
+    }
+
+    // Swap icon
+    document.getElementById('themeIconSun').style.display = theme === 'dark' ? 'none' : 'block';
+    document.getElementById('themeIconMoon').style.display = theme === 'dark' ? 'block' : 'none';
+}
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    setTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+// Restore saved theme
+const savedTheme = localStorage.getItem('rental-map-theme');
+if (savedTheme) setTheme(savedTheme);
+
+// ==========================================
+// INIT
+// ==========================================
+render();
+
+// Fit map to all markers
+const allCoords = properties.map(p => [p.lat, p.lng]);
+allCoords.push([TARUMT.lat, TARUMT.lng]);
+map.fitBounds(allCoords, { padding: [60, 440, 60, 60], maxZoom: 15 });
+
+// Fetch real driving distances in background
+fetchDrivingDistances();
+</script>
+</body>
+</html>
